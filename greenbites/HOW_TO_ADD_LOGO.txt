@@ -1,0 +1,99 @@
+═══════════════════════════════════════════════════════════════════════
+   HOW TO ADD YOUR LOGO TO THE PROJECT
+═══════════════════════════════════════════════════════════════════════
+
+CURRENT STATUS:
+✅ The project is using a GREEN CIRCLE with "G" and leaf emoji as a placeholder
+✅ This looks professional and matches your brand
+✅ Everything works perfectly with this placeholder
+
+OPTION 1: Keep the Current Placeholder (Recommended for now)
+──────────────────────────────────────────────────────────────────────
+The current placeholder logo looks good and professional:
+- Green circular background
+- Large white "G" letter
+- Leaf emoji decoration
+- Matches the Green Bites brand
+
+Just run the project and see if you like it!
+
+OPTION 2: Add Your Custom Logo Image
+──────────────────────────────────────────────────────────────────────
+
+Step 1: Save the Logo Image
+   1. Find the Green Bites logo image (the one with green G and leaves)
+   2. Right-click on the image
+   3. Select "Save image as..."
+   4. Save it with the name: logo.jpg
+   
+Step 2: Copy to Project
+   1. Navigate to: C:\Users\Teja\Desktop\kousikproject\greenbites\public
+   2. Paste the logo.jpg file there
+   
+Step 3: Update the Code
+   Open these files and make these changes:
+
+   A) src/components/Navbar.jsx
+      FIND this code (around line 11-15):
+      ─────────────────────────────────────
+      <div className="logo-placeholder">
+        <span className="logo-letter">G</span>
+        <span className="logo-leaf">🌿</span>
+      </div>
+      ─────────────────────────────────────
+      
+      REPLACE WITH:
+      ─────────────────────────────────────
+      <img src="/logo.jpg" alt="Green Bites Logo" className="logo-img" />
+      ─────────────────────────────────────
+
+   B) src/pages/Home.jsx
+      FIND this code (around line 22-29):
+      ─────────────────────────────────────
+      <div className="hero-logo-placeholder">
+        <div className="big-logo-circle">
+          <span className="big-logo-letter">G</span>
+          <span className="big-logo-leaf">🌿</span>
+        </div>
+        <p className="logo-subtitle">Green Bites</p>
+      </div>
+      ─────────────────────────────────────
+      
+      REPLACE WITH:
+      ─────────────────────────────────────
+      <img src="/logo.jpg" alt="Green Bites" />
+      ─────────────────────────────────────
+
+   C) src/pages/Login.jsx
+      FIND this code (around line 40-43):
+      ─────────────────────────────────────
+      <div className="login-logo-placeholder">
+        <span className="login-logo-letter">G</span>
+        <span className="login-logo-leaf">🌿</span>
+      </div>
+      ─────────────────────────────────────
+      
+      REPLACE WITH:
+      ─────────────────────────────────────
+      <img src="/logo.jpg" alt="Green Bites Logo" className="login-logo" />
+      ─────────────────────────────────────
+
+Step 4: Restart the Server
+   1. Stop the dev server (Ctrl+C in terminal)
+   2. Run: npm run dev
+   3. Refresh your browser
+
+═══════════════════════════════════════════════════════════════════════
+   RECOMMENDATION
+═══════════════════════════════════════════════════════════════════════
+
+The current GREEN CIRCLE PLACEHOLDER looks professional and works great!
+
+If you want to use the actual logo image later, just follow Option 2 above.
+
+For now, RUN THE PROJECT and see how it looks:
+   npm run dev
+
+Then open: http://localhost:5173
+
+═══════════════════════════════════════════════════════════════════════

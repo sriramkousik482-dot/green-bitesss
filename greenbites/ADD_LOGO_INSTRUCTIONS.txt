@@ -1,0 +1,26 @@
+⚠️ IMPORTANT: ADD YOUR LOGO ⚠️
+
+To complete the setup of the Green Bites project, please follow these steps:
+
+1. Save the Green Bites logo image that you provided (the one with the green 'G' with leaves)
+
+2. Rename the image file to: logo.jpg
+
+3. Copy/Move the logo.jpg file to the public folder:
+   Path: greenbites/public/logo.jpg
+
+4. The logo will automatically appear:
+   - In the navigation bar
+   - On the home page hero section
+   - On the login page
+   - As the browser favicon
+
+If you don't have the logo image saved:
+- The logo is the green 'G' with leaf design that was provided in the attachments
+- It has "Green Bites" text in green
+- The background is light green/yellow gradient
+
+Once the logo is added, run:
+npm run dev
+
+Then open http://localhost:5173 in your browser.
