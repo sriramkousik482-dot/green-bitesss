@@ -2,26 +2,137 @@ import { useState, useEffect } from 'react';
 import { getCurrentUser, getAllDonations, getAllRequests, updateRequestStatus, mockData } from '../data/mockData';
 import '../styles/Dashboard.css';
 
-function AdminDashboard() {
-  const user = getCurrentUser();
+const API_URL = 'http://localhost:5000/api';
+
+function AdminDashboard({ user: propUser }) {
+  const user = propUser || getCurrentUser();
   const [donations, setDonations] = useState([]);
   const [requests, setRequests] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setDonations(getAllDonations());
-    setRequests(getAllRequests());
-  }, []);
+    if (user) {
+      fetchDonations();
+      fetchRequests();
+    }
+  }, [user]);
 
-  const handleApproveRequest = (requestId) => {
-    updateRequestStatus(requestId, 'approved', user.id);
-    setRequests(getAllRequests());
-    setDonations(getAllDonations());
+  const fetchDonations = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/donations`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setDonations(data.data);
+      } else {
+        setDonations(getAllDonations());
+      }
+    } catch (err) {
+      setDonations(getAllDonations());
+    }
   };
 
-  const handleRejectRequest = (requestId) => {
-    updateRequestStatus(requestId, 'rejected', user.id);
-    setRequests(getAllRequests());
+  const fetchRequests = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/requests`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setRequests(data.data);
+      } else {
+        setRequests(getAllRequests());
+      }
+    } catch (err) {
+      setRequests(getAllRequests());
+    }
+  };
+
+  const handleApproveRequest = async (requestId) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/requests/${requestId}/approve`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        await fetchRequests();
+        await fetchDonations();
+      } else {
+        alert(data.message || 'Failed to approve request');
+      }
+    } catch (err) {
+      console.error('Error approving request:', err);
+      updateRequestStatus(requestId, 'approved', user.id);
+      setRequests(getAllRequests());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/requests/${requestId}/reject`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        await fetchRequests();
+      } else {
+        alert(data.message || 'Failed to reject request');
+      }
+    } catch (err) {
+      console.error('Error rejecting request:', err);
+      updateRequestStatus(requestId, 'rejected', user.id);
+      setRequests(getAllRequests());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteDonation = async (donationId) => {
+    if (!window.confirm('Are you sure you want to delete this donation?')) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/donations/${donationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Donation deleted successfully');
+        await fetchDonations();
+        await fetchRequests();
+      } else {
+        alert(data.message || 'Failed to delete donation');
+      }
+    } catch (err) {
+      console.error('Error deleting donation:', err);
+      alert('Failed to delete donation');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -83,13 +194,13 @@ function AdminDashboard() {
             <h2>Recent Activity</h2>
             <div className="activity-list">
               {requests.slice(0, 5).map(request => (
-                <div key={request.id} className="activity-item">
+                <div key={request._id || request.id} className="activity-item">
                   <div className="activity-icon">📋</div>
                   <div className="activity-details">
-                    <strong>{request.recipientName}</strong> requested {request.foodType}
+                    <strong>{request.recipient?.fullName || 'Recipient'}</strong> requested {request.donation?.foodType || 'Food'}
                     <span className={`status-badge status-${request.status}`}>{request.status}</span>
                   </div>
-                  <div className="activity-date">{request.requestDate}</div>
+                  <div className="activity-date">{new Date(request.createdAt || request.requestDate).toLocaleDateString()}</div>
                 </div>
               ))}
             </div>
@@ -110,17 +221,28 @@ function AdminDashboard() {
                   <th>Expiry Date</th>
                   <th>Status</th>
                   <th>Location</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {donations.map(donation => (
-                  <tr key={donation.id}>
-                    <td>{donation.donorName}</td>
+                  <tr key={donation._id || donation.id}>
+                    <td>{donation.donor?.fullName || donation.donorName || 'Donor'}</td>
                     <td>{donation.foodType}</td>
-                    <td>{donation.quantity} {donation.unit}</td>
-                    <td>{donation.expiryDate}</td>
+                    <td>{donation.quantity?.amount || donation.quantity} {donation.quantity?.unit || donation.unit}</td>
+                    <td>{new Date(donation.expiryDate).toLocaleDateString()}</td>
                     <td><span className={`status-badge status-${donation.status}`}>{donation.status}</span></td>
-                    <td>{donation.pickupLocation}</td>
+                    <td>{donation.pickupLocation?.address || donation.pickupLocation}, {donation.pickupLocation?.city}</td>
+                    <td>
+                      <button 
+                        className="btn-delete"
+                        onClick={() => handleDeleteDonation(donation._id || donation.id)}
+                        disabled={loading}
+                        title="Delete donation"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -134,27 +256,34 @@ function AdminDashboard() {
           <h2>Pending Requests</h2>
           <div className="requests-grid">
             {requests.filter(r => r.status === 'pending').map(request => (
-              <div key={request.id} className="request-card">
+              <div key={request._id || request.id} className="request-card">
                 <div className="request-header">
-                  <h3>{request.recipientName}</h3>
+                  <h3>{request.recipient?.fullName || request.recipientName || 'Recipient'}</h3>
                   <span className={`status-badge status-${request.status}`}>{request.status}</span>
                 </div>
                 <div className="request-body">
-                  <p><strong>Food Type:</strong> {request.foodType}</p>
-                  <p><strong>Request Date:</strong> {request.requestDate}</p>
-                  <p><strong>Reason:</strong></p>
-                  <p className="request-reason">{request.reason}</p>
+                  <p><strong>Food Type:</strong> {request.donation?.foodType || request.foodType}</p>
+                  <p><strong>Request Date:</strong> {new Date(request.createdAt || request.requestDate).toLocaleDateString()}</p>
+                  <p><strong>Quantity:</strong> {request.requestedQuantity?.amount} {request.requestedQuantity?.unit}</p>
+                  {request.message && (
+                    <>
+                      <p><strong>Message:</strong></p>
+                      <p className="request-reason">{request.message}</p>
+                    </>
+                  )}
                 </div>
                 <div className="request-actions">
                   <button 
                     className="btn-approve"
-                    onClick={() => handleApproveRequest(request.id)}
+                    onClick={() => handleApproveRequest(request._id || request.id)}
+                    disabled={loading}
                   >
                     Approve
                   </button>
                   <button 
                     className="btn-reject"
-                    onClick={() => handleRejectRequest(request.id)}
+                    onClick={() => handleRejectRequest(request._id || request.id)}
+                    disabled={loading}
                   >
                     Reject
                   </button>

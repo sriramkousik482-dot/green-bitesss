@@ -1,9 +1,9 @@
-# Green Bites - Development Guide
+# GreenBites - Development Guide
 
 ## Quick Start
 
 1. **Add the Logo** (IMPORTANT!)
-   - Save your Green Bites logo image as `logo.jpg`
+   - Save your GreenBites logo image as `logo.jpg`
    - Place it in the `public` folder: `public/logo.jpg`
 
 2. **Run the Application**

@@ -189,6 +189,29 @@
   transform: translateY(-2px);
 }
 
+.btn-delete {
+  background: #ff5722;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.btn-delete:hover {
+  background: #e64a19;
+  transform: translateY(-2px);
+}
+
+.btn-delete:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .btn-request {
   background: #4a7c2c;
   color: white;

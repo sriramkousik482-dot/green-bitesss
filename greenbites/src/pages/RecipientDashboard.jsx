@@ -2,26 +2,65 @@ import { useState, useEffect } from 'react';
 import { getCurrentUser, getAvailableDonations, getRequestsByRecipient, addRequest, updateDonationStatus } from '../data/mockData';
 import '../styles/Dashboard.css';
 
-function RecipientDashboard() {
-  const user = getCurrentUser();
+const API_URL = 'http://localhost:5000/api';
+
+function RecipientDashboard({ user: propUser }) {
+  const user = propUser || getCurrentUser();
   const [availableDonations, setAvailableDonations] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
   const [activeTab, setActiveTab] = useState('available');
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [reason, setReason] = useState('');
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setAvailableDonations(getAvailableDonations());
-    setMyRequests(getRequestsByRecipient(user.id));
-  }, [user.id]);
+    if (user) {
+      fetchAvailableDonations();
+      fetchMyRequests();
+    }
+  }, [user]);
+
+  const fetchAvailableDonations = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/donations?status=available`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAvailableDonations(data.data);
+      } else {
+        setAvailableDonations(getAvailableDonations());
+      }
+    } catch (err) {
+      setAvailableDonations(getAvailableDonations());
+    }
+  };
+
+  const fetchMyRequests = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/requests`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setMyRequests(data.data);
+      } else {
+        setMyRequests(getRequestsByRecipient(user.id));
+      }
+    } catch (err) {
+      setMyRequests(getRequestsByRecipient(user.id));
+    }
+  };
 
   const handleRequestFood = (donation) => {
     setSelectedDonation(donation);
     setShowRequestModal(true);
   };
 
-  const handleSubmitRequest = (e) => {
+  const handleSubmitRequest = async (e) => {
     e.preventDefault();
     
     if (reason.trim().length < 50) {
@@ -29,22 +68,44 @@ function RecipientDashboard() {
       return;
     }
 
-    const request = {
-      recipientId: user.id,
-      recipientName: user.name,
-      donationId: selectedDonation.id,
-      foodType: selectedDonation.foodType,
-      reason: reason
-    };
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const requestData = {
+        donation: selectedDonation._id || selectedDonation.id,
+        requestedQuantity: {
+          amount: selectedDonation.quantity?.amount || selectedDonation.quantity,
+          unit: selectedDonation.quantity?.unit || selectedDonation.unit
+        },
+        message: reason,
+        deliveryMethod: 'pickup'
+      };
 
-    addRequest(request);
-    updateDonationStatus(selectedDonation.id, 'claimed', user.id);
-    
-    setAvailableDonations(getAvailableDonations());
-    setMyRequests(getRequestsByRecipient(user.id));
-    setShowRequestModal(false);
-    setReason('');
-    setSelectedDonation(null);
+      const response = await fetch(`${API_URL}/requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchAvailableDonations();
+        await fetchMyRequests();
+        setShowRequestModal(false);
+        setReason('');
+        setSelectedDonation(null);
+      } else {
+        alert(data.message || 'Failed to submit request');
+      }
+    } catch (err) {
+      console.error('Error submitting request:', err);
+      alert('Unable to submit request. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const approvedRequests = myRequests.filter(r => r.status === 'approved').length;
@@ -99,28 +160,40 @@ function RecipientDashboard() {
           ) : (
             <div className="donations-grid">
               {availableDonations.map(donation => (
-                <div key={donation.id} className="donation-card">
+                <div key={donation._id || donation.id} className="donation-card">
                   <div className="card-header">
                     <h3>{donation.foodType}</h3>
                     <span className="status-badge status-available">Available</span>
                   </div>
                   <div className="card-body">
                     <div className="info-row">
-                      <span className="info-label">Donor:</span>
-                      <span className="info-value">{donation.donorName}</span>
+                      <span className="info-label">Category:</span>
+                      <span className="info-value">{donation.category}</span>
                     </div>
                     <div className="info-row">
                       <span className="info-label">Quantity:</span>
-                      <span className="info-value">{donation.quantity} {donation.unit}</span>
+                      <span className="info-value">
+                        {donation.quantity?.amount || donation.quantity} {donation.quantity?.unit || donation.unit}
+                      </span>
                     </div>
                     <div className="info-row">
                       <span className="info-label">Expiry:</span>
-                      <span className="info-value">{donation.expiryDate}</span>
+                      <span className="info-value">{new Date(donation.expiryDate).toLocaleDateString()}</span>
                     </div>
                     <div className="info-row">
                       <span className="info-label">Location:</span>
-                      <span className="info-value">📍 {donation.pickupLocation}</span>
+                      <span className="info-value">
+                        📍 {donation.pickupLocation?.address || donation.pickupLocation}, {donation.pickupLocation?.city}
+                      </span>
                     </div>
+                    {donation.pickupTime && (
+                      <div className="info-row">
+                        <span className="info-label">Pickup Time:</span>
+                        <span className="info-value">
+                          {new Date(donation.pickupTime.from).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                     {donation.description && (
                       <p className="donation-description">{donation.description}</p>
                     )}
@@ -148,17 +221,26 @@ function RecipientDashboard() {
           ) : (
             <div className="requests-list">
               {myRequests.map(request => (
-                <div key={request.id} className="request-item">
+                <div key={request._id || request.id} className="request-item">
                   <div className="request-header">
-                    <h3>{request.foodType}</h3>
+                    <h3>{request.donation?.foodType || 'Food Donation'}</h3>
                     <span className={`status-badge status-${request.status}`}>
                       {request.status}
                     </span>
                   </div>
                   <div className="request-details">
-                    <p><strong>Request Date:</strong> {request.requestDate}</p>
-                    <p><strong>Your Reason:</strong></p>
-                    <p className="request-reason">{request.reason}</p>
+                    <p><strong>Request Date:</strong> {new Date(request.createdAt || request.requestDate).toLocaleDateString()}</p>
+                    <p><strong>Quantity:</strong> {request.requestedQuantity?.amount || request.quantity} {request.requestedQuantity?.unit || request.unit}</p>
+                    <p><strong>Delivery Method:</strong> {request.deliveryMethod || 'pickup'}</p>
+                    {request.message && (
+                      <>
+                        <p><strong>Your Message:</strong></p>
+                        <p className="request-reason">{request.message}</p>
+                      </>
+                    )}
+                    {request.approvedAt && (
+                      <p className="approved-note">✅ Approved on {new Date(request.approvedAt).toLocaleDateString()}</p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -177,7 +259,10 @@ function RecipientDashboard() {
             <div className="modal-body">
               <div className="donation-summary">
                 <h3>{selectedDonation?.foodType}</h3>
-                <p>{selectedDonation?.quantity} {selectedDonation?.unit} from {selectedDonation?.donorName}</p>
+                <p>
+                  {selectedDonation?.quantity?.amount || selectedDonation?.quantity} {selectedDonation?.quantity?.unit || selectedDonation?.unit}
+                </p>
+                <p>{selectedDonation?.category}</p>
               </div>
               <form onSubmit={handleSubmitRequest}>
                 <div className="form-group">
@@ -204,8 +289,8 @@ function RecipientDashboard() {
                   <button type="button" className="btn-cancel" onClick={() => setShowRequestModal(false)}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn-submit">
-                    Submit Request
+                  <button type="submit" className="btn-submit" disabled={loading}>
+                    {loading ? 'Submitting...' : 'Submit Request'}
                   </button>
                 </div>
               </form>

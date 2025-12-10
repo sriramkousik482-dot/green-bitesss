@@ -1,8 +1,8 @@
-# Green Bites - Food Waste Management Platform
+# GreenBites - Food Waste Management Platform
 
 ## Project Overview
 
-Green Bites is a comprehensive food waste management platform designed to reduce food wastage and improve food security. The platform connects food donors with recipient organizations, enables data tracking and analysis, and provides administrative oversight.
+GreenBites is a comprehensive food waste management platform designed to reduce food wastage and improve food security. The platform connects food donors with recipient organizations, enables data tracking and analysis, and provides administrative oversight.
 
 ## Features
 

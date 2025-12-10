@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getAllDonations, mockData } from '../data/mockData';
 import '../styles/Dashboard.css';
 
-function AnalystDashboard() {
+function AnalystDashboard({ user: propUser }) {
   const [donations, setDonations] = useState([]);
   const [selectedTimeframe, setSelectedTimeframe] = useState('all');
 
